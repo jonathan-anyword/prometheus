@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -149,6 +150,8 @@ var (
 		// When native histogram feature flag is enabled, ScrapeProtocols default
 		// changes to DefaultNativeHistogramScrapeProtocols.
 		ScrapeProtocols: DefaultScrapeProtocols,
+		// Go runtime tuning.
+		GoGC: 50,
 	}
 
 	// DefaultScrapeConfig is the default scrape configuration.
@@ -425,6 +428,8 @@ type GlobalConfig struct {
 	// Keep no more than this many dropped targets per job.
 	// 0 means no limit.
 	KeepDroppedTargets uint `yaml:"keep_dropped_targets,omitempty"`
+	// The Go garbage collection target percentage.
+	GoGC int `yaml:"gogc,omitempty"`
 }
 
 // ScrapeProtocol represents supported protocol for scraping metrics.
@@ -547,6 +552,25 @@ func (c *GlobalConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	}
 	if err := validateAcceptScrapeProtocols(gc.ScrapeProtocols); err != nil {
 		return fmt.Errorf("%w for global config", err)
+	}
+
+	// If there is no configuration for global.gogc, use a fallback logic.
+	if gc.GoGC == 0 {
+		// By default, use the global default.
+		gc.GoGC = DefaultGlobalConfig.GoGC
+		goGCEnv := os.Getenv("GOGC")
+		// If the GOGC env var is set, use the same logic as upstream Go.
+		if goGCEnv != "" {
+			// Special case for GOGC=off.
+			if strings.ToLower(goGCEnv) == "off" {
+				gc.GoGC = -1
+			} else {
+				i, err := strconv.Atoi(goGCEnv)
+				if err == nil {
+					gc.GoGC = i
+				}
+			}
+		}
 	}
 
 	*c = *gc

@@ -76,6 +76,7 @@ const (
 	globLabelLimit            = 30
 	globLabelNameLengthLimit  = 200
 	globLabelValueLengthLimit = 200
+	globalGoGC                = 50
 )
 
 var expectedConf = &Config{
@@ -94,6 +95,7 @@ var expectedConf = &Config{
 		LabelNameLengthLimit:  globLabelNameLengthLimit,
 		LabelValueLengthLimit: globLabelValueLengthLimit,
 		ScrapeProtocols:       DefaultGlobalConfig.ScrapeProtocols,
+		GoGC:                  globalGoGC,
 	},
 
 	RuleFiles: []string{
